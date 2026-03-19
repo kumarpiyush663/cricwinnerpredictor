@@ -16,6 +16,9 @@ import secrets
 import re
 from collections import defaultdict
 import time
+import asyncio
+import resend
+import httpx
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -30,6 +33,16 @@ JWT_SECRET = os.environ.get('JWT_SECRET', secrets.token_hex(32))
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 24
 JWT_EXTENDED_EXPIRY_DAYS = 7
+
+# Resend Configuration
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
+
+# CricAPI Configuration
+CRICAPI_KEY = os.environ.get('CRICAPI_KEY')
+CRICAPI_BASE_URL = os.environ.get('CRICAPI_BASE_URL', 'https://api.cricapi.com/v1')
 
 # Rate limiting storage
 rate_limit_store: Dict[str, List[float]] = defaultdict(list)
@@ -274,14 +287,50 @@ def check_rate_limit(ip: str) -> bool:
     rate_limit_store[ip].append(current_time)
     return True
 
-def send_mock_email(to_email: str, subject: str, body: str):
-    """Mock email function - logs email to console"""
-    logger.info(f"\n{'='*50}")
-    logger.info(f"📧 MOCK EMAIL SENT")
-    logger.info(f"To: {to_email}")
-    logger.info(f"Subject: {subject}")
-    logger.info(f"Body:\n{body}")
-    logger.info(f"{'='*50}\n")
+async def send_email(to_email: str, subject: str, body: str):
+    """Send email using Resend API"""
+    if not RESEND_API_KEY:
+        # Fallback to mock if no API key
+        logger.info(f"\n{'='*50}")
+        logger.info(f"📧 MOCK EMAIL (No Resend API Key)")
+        logger.info(f"To: {to_email}")
+        logger.info(f"Subject: {subject}")
+        logger.info(f"Body:\n{body}")
+        logger.info(f"{'='*50}\n")
+        return
+    
+    try:
+        # Convert plain text to HTML
+        html_body = body.replace('\n', '<br>')
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #059669, #0f172a); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+                <h1 style="color: white; margin: 0;">🏏 Cricket Predictor League</h1>
+            </div>
+            <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
+                <p style="color: #334155; line-height: 1.6;">{html_body}</p>
+            </div>
+            <p style="text-align: center; color: #64748b; font-size: 12px; margin-top: 20px;">
+                Cricket Tournament Predictor League
+            </p>
+        </div>
+        """
+        
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [to_email],
+            "subject": subject,
+            "html": html_content
+        }
+        
+        # Run sync SDK in thread to keep FastAPI non-blocking
+        email_result = await asyncio.to_thread(resend.Emails.send, params)
+        logger.info(f"📧 Email sent successfully to {to_email}, ID: {email_result.get('id')}")
+        return email_result
+    except Exception as e:
+        logger.error(f"❌ Failed to send email to {to_email}: {str(e)}")
+        # Log the email content as fallback
+        logger.info(f"📧 Email content (failed to send):\nTo: {to_email}\nSubject: {subject}\nBody:\n{body}")
 
 def get_ist_now() -> datetime:
     """Get current time in IST"""
@@ -434,9 +483,9 @@ async def forgot_password(request: Request, data: PasswordResetRequest):
     }
     await db.password_resets.insert_one(reset_record)
     
-    # Send mock email
+    # Send email
     reset_link = f"/reset-password?token={reset_token}"
-    send_mock_email(
+    await send_email(
         data.email,
         "Password Reset - Cricket Tournament Predictor League",
         f"Click this link to reset your password: {reset_link}\n\nThis link expires in 1 hour."
@@ -640,70 +689,111 @@ async def delete_match(match_id: str, user: Dict = Depends(get_admin_user)):
 
 @admin_router.post("/matches/sync")
 async def sync_matches(tournament_id: str, user: Dict = Depends(get_admin_user)):
-    """Mock API sync - generates sample matches"""
+    """Sync matches from CricAPI - fetches real cricket matches"""
     tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
     if not tournament:
         raise HTTPException(status_code=404, detail="Tournament not found")
     
     teams = tournament.get("teams", [])
-    if len(teams) < 2:
-        raise HTTPException(status_code=400, detail="Tournament must have at least 2 teams")
+    tournament_teams_lower = [t.lower() for t in teams]
     
-    # Generate mock matches
-    venues = ["Wankhede Stadium, Mumbai", "Eden Gardens, Kolkata", "M. Chinnaswamy Stadium, Bengaluru", 
-              "Narendra Modi Stadium, Ahmedabad", "Arun Jaitley Stadium, Delhi"]
+    if not CRICAPI_KEY:
+        raise HTTPException(status_code=500, detail="CricAPI key not configured")
     
     matches_created = []
-    match_no = 1
-    base_date = datetime.now(timezone.utc) + timedelta(days=1)
+    match_no = await db.matches.count_documents({"tournament_id": tournament_id}) + 1
     
-    # Generate group stage matches (each team plays each other once)
-    for i in range(len(teams)):
-        for j in range(i + 1, len(teams)):
-            match_date = base_date + timedelta(days=match_no - 1)
-            match = {
-                "id": str(uuid.uuid4()),
-                "tournament_id": tournament_id,
-                "match_no": match_no,
-                "stage": "Group",
-                "team_a": teams[i],
-                "team_b": teams[j],
-                "venue": venues[match_no % len(venues)],
-                "start_datetime_ist": match_date.isoformat(),
-                "result_winner": None,
-                "status": "upcoming",
-                "created_at": datetime.now(timezone.utc).isoformat()
+    try:
+        async with httpx.AsyncClient() as client:
+            # Fetch current matches from CricAPI
+            response = await client.get(
+                f"{CRICAPI_BASE_URL}/matches",
+                params={"apikey": CRICAPI_KEY, "offset": 0},
+                timeout=30.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            if data.get("status") != "success":
+                raise HTTPException(status_code=500, detail=f"CricAPI error: {data.get('status')}")
+            
+            api_matches = data.get("data", [])
+            logger.info(f"Fetched {len(api_matches)} matches from CricAPI")
+            
+            # Filter matches that involve tournament teams
+            for api_match in api_matches:
+                team1 = api_match.get("teamInfo", [{}])[0].get("name", api_match.get("teams", [""])[0]) if api_match.get("teamInfo") else api_match.get("teams", [""])[0]
+                team2 = api_match.get("teamInfo", [{}])[1].get("name", api_match.get("teams", [""])[1]) if api_match.get("teamInfo") and len(api_match.get("teamInfo", [])) > 1 else api_match.get("teams", ["", ""])[1]
+                
+                # Check if match involves any of our tournament teams
+                team1_lower = team1.lower() if team1 else ""
+                team2_lower = team2.lower() if team2 else ""
+                
+                team1_match = any(t in team1_lower or team1_lower in t for t in tournament_teams_lower)
+                team2_match = any(t in team2_lower or team2_lower in t for t in tournament_teams_lower)
+                
+                if team1_match or team2_match or len(teams) == 0:
+                    # Check if match already exists
+                    existing = await db.matches.find_one({
+                        "tournament_id": tournament_id,
+                        "cricapi_id": api_match.get("id")
+                    })
+                    
+                    if not existing:
+                        # Determine match status
+                        match_status = "upcoming"
+                        if api_match.get("matchStarted") and not api_match.get("matchEnded"):
+                            match_status = "live"
+                        elif api_match.get("matchEnded"):
+                            match_status = "completed"
+                        
+                        # Parse date
+                        match_date = api_match.get("dateTimeGMT") or api_match.get("date")
+                        if match_date:
+                            try:
+                                if "T" in str(match_date):
+                                    parsed_date = datetime.fromisoformat(match_date.replace("Z", "+00:00"))
+                                else:
+                                    parsed_date = datetime.strptime(match_date, "%Y-%m-%d")
+                                    parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+                            except:
+                                parsed_date = datetime.now(timezone.utc) + timedelta(days=1)
+                        else:
+                            parsed_date = datetime.now(timezone.utc) + timedelta(days=1)
+                        
+                        match = {
+                            "id": str(uuid.uuid4()),
+                            "cricapi_id": api_match.get("id"),
+                            "tournament_id": tournament_id,
+                            "match_no": match_no,
+                            "stage": "Group",
+                            "team_a": team1 or "Team A",
+                            "team_b": team2 or "Team B",
+                            "venue": api_match.get("venue", "TBD"),
+                            "start_datetime_ist": parsed_date.isoformat(),
+                            "result_winner": None,
+                            "status": match_status,
+                            "match_type": api_match.get("matchType", ""),
+                            "series": api_match.get("name", ""),
+                            "created_at": datetime.now(timezone.utc).isoformat()
+                        }
+                        await db.matches.insert_one(match)
+                        matches_created.append(match)
+                        match_no += 1
+            
+            return {
+                "message": f"Synced {len(matches_created)} matches from CricAPI",
+                "matches_count": len(matches_created),
+                "total_api_matches": len(api_matches),
+                "last_synced": datetime.now(timezone.utc).isoformat()
             }
-            await db.matches.insert_one(match)
-            matches_created.append(match)
-            match_no += 1
-    
-    # Add knockout matches (placeholders)
-    for stage, count in [("QF", 4), ("SF", 2), ("Final", 1)]:
-        for _ in range(count):
-            match_date = base_date + timedelta(days=match_no)
-            match = {
-                "id": str(uuid.uuid4()),
-                "tournament_id": tournament_id,
-                "match_no": match_no,
-                "stage": stage,
-                "team_a": "TBD",
-                "team_b": "TBD",
-                "venue": venues[match_no % len(venues)],
-                "start_datetime_ist": match_date.isoformat(),
-                "result_winner": None,
-                "status": "upcoming",
-                "created_at": datetime.now(timezone.utc).isoformat()
-            }
-            await db.matches.insert_one(match)
-            matches_created.append(match)
-            match_no += 1
-    
-    return {
-        "message": f"Synced {len(matches_created)} matches",
-        "matches_count": len(matches_created),
-        "last_synced": datetime.now(timezone.utc).isoformat()
-    }
+            
+    except httpx.HTTPError as e:
+        logger.error(f"CricAPI HTTP error: {str(e)}")
+        raise HTTPException(status_code=503, detail=f"Failed to fetch from CricAPI: {str(e)}")
+    except Exception as e:
+        logger.error(f"CricAPI sync error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Sync failed: {str(e)}")
 
 # ==================== NOMINATION ROUTES ====================
 
@@ -746,7 +836,7 @@ async def create_nomination(data: NominationCreate, user: Dict = Depends(get_adm
     tournament_name = active_tournament["name"] if active_tournament else "Cricket Tournament Predictor League"
     
     invite_link = f"/signup?token={invite_token}"
-    send_mock_email(
+    await send_email(
         data.email,
         f"You're Invited to {tournament_name}!",
         f"""Hi {data.full_name},
@@ -814,7 +904,7 @@ async def resend_invite(nomination_id: str, user: Dict = Depends(get_admin_user)
     tournament_name = active_tournament["name"] if active_tournament else "Cricket Tournament Predictor League"
     
     invite_link = f"/signup?token={invite_token}"
-    send_mock_email(
+    await send_email(
         nomination["email"],
         f"Reminder: You're Invited to {tournament_name}!",
         f"""Hi {nomination["full_name"]},
