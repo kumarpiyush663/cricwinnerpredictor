@@ -1157,19 +1157,34 @@ const NominationsTab = ({ refreshStats }) => {
                   <TableCell className="text-right">
                     {nom.status === 'invited' && nom.invite_token && (
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const link = `${window.location.origin}/signup?token=${nom.invite_token}`;
-                            navigator.clipboard.writeText(link);
-                            toast.success('Invite link copied!');
-                          }}
-                          data-testid={`copy-invite-${nom.id}`}
-                        >
-                          <Link2 className="w-4 h-4 mr-1" />
-                          Copy Link
-                        </Button>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              data-testid={`copy-invite-${nom.id}`}
+                            >
+                              <Link2 className="w-4 h-4 mr-1" />
+                              View Link
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Invite Link for {nom.full_name}</DialogTitle>
+                              <DialogDescription>
+                                Share this link with the user to let them sign up
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="p-3 bg-muted rounded-lg break-all text-sm font-mono">
+                                {`${window.location.origin}/signup?token=${nom.invite_token}`}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                Select and copy the link above, or right-click → Copy
+                              </p>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                         <Button
                           variant="ghost"
                           size="sm"
