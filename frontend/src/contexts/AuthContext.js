@@ -11,6 +11,25 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   const fetchUser = useCallback(async () => {
+    // First try with stored token
+    const token = localStorage.getItem('auth_token');
+    
+    if (token) {
+      try {
+        const response = await axios.get(`${API_URL}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true
+        });
+        setUser(response.data);
+        setError(null);
+        setLoading(false);
+        return;
+      } catch (e) {
+        localStorage.removeItem('auth_token');
+      }
+    }
+    
+    // Fallback to cookie-based auth
     try {
       const response = await axios.get(`${API_URL}/api/auth/me`, {
         withCredentials: true
@@ -19,19 +38,6 @@ export const AuthProvider = ({ children }) => {
       setError(null);
     } catch (err) {
       setUser(null);
-      // Check if token exists in localStorage as fallback
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        try {
-          const response = await axios.get(`${API_URL}/api/auth/me`, {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          setUser(response.data);
-          setError(null);
-        } catch (e) {
-          localStorage.removeItem('auth_token');
-        }
-      }
     } finally {
       setLoading(false);
     }
