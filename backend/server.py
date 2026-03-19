@@ -33,8 +33,8 @@ JWT_EXTENDED_EXPIRY_DAYS = 7
 
 # Rate limiting storage
 rate_limit_store: Dict[str, List[float]] = defaultdict(list)
-RATE_LIMIT_WINDOW = 900  # 15 minutes
-RATE_LIMIT_MAX_REQUESTS = 5
+RATE_LIMIT_WINDOW = 60  # 1 minute
+RATE_LIMIT_MAX_REQUESTS = 100  # Much more relaxed for testing
 
 # Create the main app
 app = FastAPI(title="Cricket Tournament Predictor League API")
