@@ -240,7 +240,12 @@ export const SignupPage = () => {
                 <Button 
                   type="submit" 
                   className="w-full rounded-full font-bold uppercase tracking-wide"
-                  disabled={loading || !passwordStrength.isValid}
+                  disabled={loading || !(
+                    watchPassword.length >= 8 &&
+                    /[A-Z]/.test(watchPassword) &&
+                    /[0-9]/.test(watchPassword) &&
+                    /[!@#$%^&*(),.?":{}|<>]/.test(watchPassword)
+                  )}
                   data-testid="signup-submit"
                 >
                   {loading ? (
