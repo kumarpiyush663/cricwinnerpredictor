@@ -50,7 +50,8 @@ import {
   MapPin,
   Mail,
   FileText,
-  AlertCircle
+  AlertCircle,
+  Link2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateIST, formatDate, cn } from '../../lib/utils';
@@ -1154,16 +1155,31 @@ const NominationsTab = ({ refreshStats }) => {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {nom.status === 'invited' && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleResend(nom.id)}
-                        data-testid={`resend-invite-${nom.id}`}
-                      >
-                        <Send className="w-4 h-4 mr-1" />
-                        Resend
-                      </Button>
+                    {nom.status === 'invited' && nom.invite_token && (
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const link = `${window.location.origin}/signup?token=${nom.invite_token}`;
+                            navigator.clipboard.writeText(link);
+                            toast.success('Invite link copied!');
+                          }}
+                          data-testid={`copy-invite-${nom.id}`}
+                        >
+                          <Link2 className="w-4 h-4 mr-1" />
+                          Copy Link
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleResend(nom.id)}
+                          data-testid={`resend-invite-${nom.id}`}
+                        >
+                          <Send className="w-4 h-4 mr-1" />
+                          Resend
+                        </Button>
+                      </div>
                     )}
                   </TableCell>
                 </TableRow>
