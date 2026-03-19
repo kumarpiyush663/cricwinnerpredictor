@@ -1,0 +1,143 @@
+{
+  "identity": {
+    "persona": "E1: The Anti-AI Designer",
+    "mission": "Create a visceral, high-energy Cricket Prediction League that feels like a broadcast sports channel, not a spreadsheet.",
+    "principles": [
+      "Fusion over Imitation: Mix SaaS precision with Sports Broadcast energy.",
+      "Emotion First: The thrill of the match must be felt in the UI.",
+      "Content is King: Stats and predictions are the heroes.",
+      "Zoom In: Big numbers, bold names."
+    ]
+  },
+  "theme_strategy": {
+    "primary_theme": "light",
+    "support_dark_mode": true,
+    "vibe": "Modern Sports Broadcast",
+    "archetype": "The Performance Pro mixed with Vibrant Play"
+  },
+  "typography": {
+    "font_family": {
+      "headings": "Chivo, sans-serif",
+      "body": "Inter, sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-5xl md:text-6xl font-black tracking-tight uppercase italic",
+      "h2": "text-3xl md:text-4xl font-bold tracking-tight uppercase",
+      "h3": "text-2xl font-bold tracking-tight",
+      "body": "text-base font-normal leading-relaxed",
+      "label": "text-xs font-bold tracking-wider uppercase text-muted-foreground"
+    },
+    "imports": [
+      "@import url('https://fonts.googleapis.com/css2?family=Chivo:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&family=Inter:wght@300;400;500;600;700&display=swap');"
+    ]
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "#059669",
+        "foreground": "#ffffff",
+        "50": "#ecfdf5",
+        "100": "#d1fae5",
+        "500": "#10b981",
+        "600": "#059669",
+        "700": "#047857",
+        "900": "#064e3b"
+      },
+      "secondary": {
+        "DEFAULT": "#fbbf24",
+        "foreground": "#1e293b",
+        "500": "#f59e0b",
+        "400": "#fbbf24"
+      },
+      "accent": {
+        "DEFAULT": "#3b82f6",
+        "foreground": "#ffffff"
+      },
+      "background": {
+        "light": "#f3f4f6",
+        "dark": "#0f172a"
+      },
+      "surface": {
+        "light": "#ffffff",
+        "dark": "#1e293b"
+      },
+      "status": {
+        "live": "#ef4444",
+        "upcoming": "#3b82f6",
+        "completed": "#64748b"
+      }
+    },
+    "gradients": {
+      "hero": "bg-gradient-to-br from-emerald-900 via-emerald-800 to-slate-900",
+      "card_hover": "hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10",
+      "glass": "bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-white/20"
+    }
+  },
+  "components": {
+    "buttons": {
+      "base": "rounded-full font-bold uppercase tracking-wide transition-all active:scale-95",
+      "primary": "bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25",
+      "outline": "border-2 border-primary text-primary hover:bg-primary/10"
+    },
+    "cards": {
+      "base": "rounded-2xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md",
+      "glass": "rounded-2xl border border-white/10 bg-white/60 dark:bg-black/40 backdrop-blur-xl shadow-lg"
+    },
+    "inputs": {
+      "base": "rounded-lg border-input bg-background/50 backdrop-blur-sm px-4 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    }
+  },
+  "layout_strategies": {
+    "dashboard_grid": "grid grid-cols-1 md:grid-cols-12 gap-6 p-6",
+    "bento_items": {
+      "hero_stat": "col-span-1 md:col-span-8 lg:col-span-8 row-span-2",
+      "side_list": "col-span-1 md:col-span-4 lg:col-span-4 row-span-2",
+      "small_stat": "col-span-1 md:col-span-4 lg:col-span-3"
+    },
+    "container": "container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8",
+    "section_spacing": "py-12 md:py-24"
+  },
+  "visual_enhancers": {
+    "textures": {
+      "noise": "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E\")",
+      "turf": "url('https://images.unsplash.com/photo-1772441256861-3046f4b8075f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGdyZWVuJTIwdHVyZiUyMHNwb3J0cyUyMHRleHR1cmV8ZW58MHx8fHwxNzczOTQ0MjI5fDA&ixlib=rb-4.1.0&q=85')"
+    },
+    "shadows": {
+      "soft": "0 4px 20px -2px rgba(0, 0, 0, 0.05)",
+      "neon": "0 0 15px rgba(5, 150, 105, 0.5)"
+    },
+    "animations": {
+      "hover_lift": "hover:-translate-y-1 transition-transform duration-300 ease-out",
+      "pulse_live": "animate-pulse bg-red-500"
+    }
+  },
+  "images": {
+    "hero_bg": "https://images.unsplash.com/photo-1750716413341-fd5d93296a76?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHw0fHxjcmlja2V0JTIwc3RhZGl1bSUyMG5pZ2h0JTIwbWF0Y2glMjBsaWdodHN8ZW58MHx8fHwxNzczOTQ0MjI2fDA&ixlib=rb-4.1.0&q=85",
+    "auth_bg": "https://images.pexels.com/photos/9828070/pexels-photo-9828070.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "trophy": "https://images.unsplash.com/photo-1578269174936-2709b6aeb913?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzF8MHwxfHNlYXJjaHwxfHxnb2xkJTIwd2lubmVyJTIwdHJvcGh5JTIwY3VwJTIwaXNvbGF0ZWR8ZW58MHx8fHwxNzczOTQ0MjM1fDA&ixlib=rb-4.1.0&q=85",
+    "texture_turf": "https://images.unsplash.com/photo-1772441256861-3046f4b8075f?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGdyZWVuJTIwdHVyZiUyMHNwb3J0cyUyMHRleHR1cmV8ZW58MHx8fHwxNzczOTQ0MjI2fDA&ixlib=rb-4.1.0&q=85"
+  },
+  "instructions_to_main_agent": [
+    "Install 'lucide-react' for icons.",
+    "Install 'framer-motion' for smooth animations.",
+    "Use 'Chivo' font for all headings to give that sports broadcast feel.",
+    "Use 'Inter' for all body text and data tables.",
+    "Implement a 'Dark Mode' toggle in the navbar.",
+    "The Dashboard should use a Bento Grid layout.",
+    "Match Cards should clearly distinguish between Upcoming (Blue), Live (Pulsing Red/Green), and Completed (Gray).",
+    "Use the 'hero_bg' image with a heavy dark overlay for the Landing Page hero section.",
+    "Use the 'auth_bg' image for the split-screen login/signup pages.",
+    "Leaderboard: Highlight the top 3 users with gold/silver/bronze accents.",
+    "Forms: Use Shadcn UI components but style them with 'rounded-lg' and 'backdrop-blur' if on top of images.",
+    "Toast notifications: Use 'sonner' with a clean, pill-shaped design."
+  ],
+  "universal_guidelines": [
+    "Avoid 'AI Slop': No generic centered layouts or gradients.",
+    "Micro-animations are mandatory for all interactions.",
+    "Use generous spacing (p-6, p-8) to avoid clutter.",
+    "Ensure high contrast for text, especially on dark backgrounds.",
+    "All interactive elements must have 'data-testid'.",
+    "Do not use transparent backgrounds for dropdowns or overlays without blur."
+  ]
+}
