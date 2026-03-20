@@ -28,3 +28,5 @@ typer>=0.9.0
 httpx==0.28.1
 resend==2.25.0
 aiocron
+certifi>=2024.2.2
+dnspython>=2.6.1
