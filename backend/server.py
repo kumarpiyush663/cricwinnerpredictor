@@ -19,7 +19,7 @@ import time
 import asyncio
 import resend
 import httpx
-
+import aiocron, httpx
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -1228,3 +1228,13 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def startup():
+    # ... your existing startup code ...
+    
+    @aiocron.crontab('*/10 * * * *')
+    async def keep_alive():
+        async with httpx.AsyncClient() as c:
+            await c.get("https://cricwinner-backend.onrender.com/api/tournaments")
