@@ -1238,3 +1238,9 @@ async def startup():
     async def keep_alive():
         async with httpx.AsyncClient() as c:
             await c.get("https://cricwinner-backend.onrender.com/api/tournaments")
+
+client = AsyncIOMotorClient(
+    mongo_url,
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=10000
+)
