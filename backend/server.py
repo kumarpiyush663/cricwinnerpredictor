@@ -1192,7 +1192,7 @@ async def startup():
         # Seed admin user if not exists
         admin = await db.users.find_one({"role": "admin"})
         if not admin:
-            admin_password = secrets.token_urlsafe(12)
+            admin_password = os.environ.get('ADMIN_PASSWORD', secrets.token_urlsafe(12))
             admin_user = {
                 "id": str(uuid.uuid4()),
                 "nomination_id": None,
