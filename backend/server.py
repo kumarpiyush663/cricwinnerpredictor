@@ -1188,37 +1188,43 @@ async def get_admin_stats(user: Dict = Depends(get_admin_user)):
 
 @app.on_event("startup")
 async def startup():
-    # Seed admin user if not exists
-    admin = await db.users.find_one({"role": "admin"})
-    if not admin:
-        admin_password = secrets.token_urlsafe(12)
-        admin_user = {
-            "id": str(uuid.uuid4()),
-            "nomination_id": None,
-            "username": "admin",
-            "email": "admin@cricketpredictor.com",
-            "full_name": "System Administrator",
-            "password_hash": hash_password(admin_password),
-            "role": "admin",
-            "created_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.users.insert_one(admin_user)
-        logger.info("="*50)
-        logger.info("🏏 ADMIN USER CREATED")
-        logger.info(f"   Username: admin")
-        logger.info(f"   Email: admin@cricketpredictor.com")
-        logger.info(f"   Password: {admin_password}")
-        logger.info("="*50)
-    
-    # Create indexes
-    await db.users.create_index("email", unique=True)
-    await db.users.create_index("username", unique=True)
-    await db.nominations.create_index("email", unique=True)
-    await db.nominations.create_index("username", unique=True)
-    await db.nominations.create_index("invite_token")
-    await db.predictions.create_index([("user_id", 1), ("match_id", 1)], unique=True)
-    await db.tournaments.create_index("active_flag")
-    await db.matches.create_index("tournament_id")
+    try:
+        # Seed admin user if not exists
+        admin = await db.users.find_one({"role": "admin"})
+        if not admin:
+            admin_password = secrets.token_urlsafe(12)
+            admin_user = {
+                "id": str(uuid.uuid4()),
+                "nomination_id": None,
+                "username": "admin",
+                "email": "admin@cricketpredictor.com",
+                "full_name": "System Administrator",
+                "password_hash": hash_password(admin_password),
+                "role": "admin",
+                "created_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.users.insert_one(admin_user)
+            logger.info("="*50)
+            logger.info("🏏 ADMIN USER CREATED")
+            logger.info(f"   Username: admin")
+            logger.info(f"   Email: admin@cricketpredictor.com")
+            logger.info(f"   Password: {admin_password}")
+            logger.info("="*50)
+        
+        # Create indexes
+        await db.users.create_index("email", unique=True)
+        await db.users.create_index("username", unique=True)
+        await db.nominations.create_index("email", unique=True)
+        await db.nominations.create_index("username", unique=True)
+        await db.nominations.create_index("invite_token")
+        await db.predictions.create_index([("user_id", 1), ("match_id", 1)], unique=True)
+        await db.tournaments.create_index("active_flag")
+        await db.matches.create_index("tournament_id")
+        logger.info("✅ MongoDB connected and indexes created successfully")
+    except Exception as e:
+        logger.error(f"⚠️ MongoDB startup failed: {e}")
+        logger.error("⚠️ App will start but DB operations will fail until MongoDB is reachable.")
+        logger.error("⚠️ Check: 1) IP whitelisted in Atlas  2) MONGO_URL is correct  3) Cluster is running")
 
     # Keep-alive cron to prevent Render free-tier spin-down
     @aiocron.crontab('*/10 * * * *')
