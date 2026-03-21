@@ -17,12 +17,9 @@ import re
 from collections import defaultdict
 import time
 import asyncio
-import resend
 import httpx
 import aiocron
-import aiosmtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+
 import certifi
 
 ROOT_DIR = Path(__file__).parent
@@ -44,17 +41,10 @@ JWT_ALGORITHM = "HS256"
 JWT_EXPIRY_HOURS = 24
 JWT_EXTENDED_EXPIRY_DAYS = 7
 
-# Email Configuration (Gmail SMTP preferred, Resend as fallback)
-SMTP_EMAIL = os.environ.get('SMTP_EMAIL')  # Gmail address
-SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')  # Gmail App Password
-SMTP_HOST = os.environ.get('SMTP_HOST', 'smtp.gmail.com')
-SMTP_PORT = int(os.environ.get('SMTP_PORT', '587'))
-
-# Resend fallback
-RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL', SMTP_EMAIL or 'onboarding@resend.dev')
-if RESEND_API_KEY:
-    resend.api_key = RESEND_API_KEY
+# Email Configuration (Brevo - free 300 emails/day, HTTP API, no domain needed)
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL')  # Your verified Gmail
+SENDER_NAME = os.environ.get('SENDER_NAME', 'Cricket Predictor League')
 
 # CricAPI Configuration
 CRICAPI_KEY = os.environ.get('CRICAPI_KEY')
@@ -304,7 +294,7 @@ def check_rate_limit(ip: str) -> bool:
     return True
 
 async def send_email(to_email: str, subject: str, body: str):
-    """Send email via Gmail SMTP (free), Resend (paid), or log to console"""
+    """Send email via Brevo HTTP API (free, 300/day, no domain needed)"""
     # Build HTML content
     html_body = body.replace('\n', '<br>')
     html_content = f"""
@@ -321,47 +311,37 @@ async def send_email(to_email: str, subject: str, body: str):
     </div>
     """
 
-    # Method 1: Gmail SMTP (free, no domain needed)
-    if SMTP_EMAIL and SMTP_PASSWORD:
+    # Brevo HTTP API (free, works on Render)
+    if BREVO_API_KEY and SENDER_EMAIL:
         try:
-            message = MIMEMultipart('alternative')
-            message['From'] = f'Cricket Predictor League <{SMTP_EMAIL}>'
-            message['To'] = to_email
-            message['Subject'] = subject
-            message.attach(MIMEText(body, 'plain'))
-            message.attach(MIMEText(html_content, 'html'))
-
-            await aiosmtplib.send(
-                message,
-                hostname=SMTP_HOST,
-                port=SMTP_PORT,
-                start_tls=True,
-                username=SMTP_EMAIL,
-                password=SMTP_PASSWORD,
-            )
-            logger.info(f"📧 Email sent via SMTP to {to_email}")
-            return
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={
+                        "api-key": BREVO_API_KEY,
+                        "Content-Type": "application/json",
+                        "accept": "application/json",
+                    },
+                    json={
+                        "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
+                        "to": [{"email": to_email}],
+                        "subject": subject,
+                        "htmlContent": html_content,
+                    },
+                    timeout=30.0,
+                )
+                if response.status_code in (200, 201):
+                    msg_id = response.json().get("messageId", "")
+                    logger.info(f"📧 Email sent via Brevo to {to_email}, ID: {msg_id}")
+                    return
+                else:
+                    logger.error(f"❌ Brevo API error ({response.status_code}): {response.text}")
         except Exception as e:
-            logger.error(f"❌ SMTP email failed to {to_email}: {str(e)}")
+            logger.error(f"❌ Brevo email failed to {to_email}: {str(e)}")
 
-    # Method 2: Resend API (needs custom domain)
-    if RESEND_API_KEY:
-        try:
-            params = {
-                "from": SENDER_EMAIL,
-                "to": [to_email],
-                "subject": subject,
-                "html": html_content
-            }
-            email_result = await asyncio.to_thread(resend.Emails.send, params)
-            logger.info(f"📧 Email sent via Resend to {to_email}, ID: {email_result.get('id')}")
-            return email_result
-        except Exception as e:
-            logger.error(f"❌ Resend email failed to {to_email}: {str(e)}")
-
-    # Method 3: Log to console (fallback)
+    # Fallback: Log to console
     logger.info(f"\n{'='*50}")
-    logger.info(f"📧 EMAIL (no SMTP/Resend configured)")
+    logger.info(f"📧 EMAIL (no Brevo API key configured)")
     logger.info(f"To: {to_email}")
     logger.info(f"Subject: {subject}")
     logger.info(f"Body:\n{body}")
