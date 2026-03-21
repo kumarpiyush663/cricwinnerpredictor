@@ -30,3 +30,4 @@ resend==2.25.0
 aiocron
 certifi>=2024.2.2
 dnspython>=2.6.1
+aiosmtplib>=3.0.0
