@@ -535,11 +535,20 @@ async def forgot_password(request: Request, data: PasswordResetRequest):
     await db.password_resets.insert_one(reset_record)
     
     # Send email
-    reset_link = f"/reset-password?token={reset_token}"
+    reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
     await send_email(
         data.email,
         "Password Reset - Cricket Tournament Predictor League",
-        f"Click this link to reset your password: {reset_link}\n\nThis link expires in 1 hour."
+        f"""Hello,
+
+We received a request to reset your password for the Cricket Tournament Predictor League.
+
+Click the button below to choose a new password.
+
+This link expires in 1 hour. If you didn't request a password reset, you can safely ignore this email.
+""",
+        action_url=reset_link,
+        action_text="Reset Your Password"
     )
     
     return {"message": "If the email exists, a reset link has been sent", "reset_token": reset_token}
