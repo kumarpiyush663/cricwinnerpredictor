@@ -53,6 +53,9 @@ else:
     print("⚠️ BREVO_API_KEY not set — emails will be logged to console only")
 print(f"📧 Sender email: {SENDER_EMAIL}")
 
+# Frontend URL (for email links)
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://cricwinnerpredictor.vercel.app')
+
 # CricAPI Configuration
 CRICAPI_KEY = os.environ.get('CRICAPI_KEY')
 CRICAPI_BASE_URL = os.environ.get('CRICAPI_BASE_URL', 'https://api.cricapi.com/v1')
@@ -300,10 +303,34 @@ def check_rate_limit(ip: str) -> bool:
     rate_limit_store[ip].append(current_time)
     return True
 
-async def send_email(to_email: str, subject: str, body: str):
+async def send_email(to_email: str, subject: str, body: str, action_url: str = None, action_text: str = None):
     """Send email via Brevo HTTP API (free, 300/day, no domain needed)"""
     # Build HTML content
     html_body = body.replace('\n', '<br>')
+    
+    # Build CTA button if action URL is provided
+    button_html = ''
+    if action_url and action_text:
+        button_html = f"""
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{action_url}" style="
+                    display: inline-block;
+                    background: linear-gradient(135deg, #059669, #047857);
+                    color: white;
+                    padding: 14px 32px;
+                    text-decoration: none;
+                    border-radius: 50px;
+                    font-weight: 600;
+                    font-size: 16px;
+                    letter-spacing: 0.5px;
+                    box-shadow: 0 4px 15px rgba(5, 150, 105, 0.3);
+                ">🏏 {action_text}</a>
+            </div>
+            <p style="color: #94a3b8; font-size: 12px; text-align: center; word-break: break-all;">
+                Or copy this link: <a href="{action_url}" style="color: #059669;">{action_url}</a>
+            </p>
+        """
+    
     html_content = f"""
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(135deg, #059669, #0f172a); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -311,6 +338,7 @@ async def send_email(to_email: str, subject: str, body: str):
         </div>
         <div style="background: #f8fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 10px 10px;">
             <p style="color: #334155; line-height: 1.6;">{html_body}</p>
+            {button_html}
         </div>
         <p style="text-align: center; color: #64748b; font-size: 12px; margin-top: 20px;">
             Cricket Tournament Predictor League
@@ -858,7 +886,7 @@ async def create_nomination(data: NominationCreate, user: Dict = Depends(get_adm
     active_tournament = await db.tournaments.find_one({"active_flag": True}, {"_id": 0})
     tournament_name = active_tournament["name"] if active_tournament else "Cricket Tournament Predictor League"
     
-    invite_link = f"/signup?token={invite_token}"
+    invite_link = f"{FRONTEND_URL}/signup?token={invite_token}"
     await send_email(
         data.email,
         f"You're Invited to {tournament_name}!",
@@ -866,15 +894,16 @@ async def create_nomination(data: NominationCreate, user: Dict = Depends(get_adm
 
 You have been invited to join {tournament_name}!
 
-Click the link below to create your account and start predicting match winners:
-{invite_link}
+Create your account and start predicting match winners.
 
 Your username will be: {data.username}
 
 This invite expires in 7 days.
 
 Good luck with your predictions!
-"""
+""",
+        action_url=invite_link,
+        action_text="Join Now & Start Predicting"
     )
     
     return {
@@ -926,7 +955,7 @@ async def resend_invite(nomination_id: str, user: Dict = Depends(get_admin_user)
     active_tournament = await db.tournaments.find_one({"active_flag": True}, {"_id": 0})
     tournament_name = active_tournament["name"] if active_tournament else "Cricket Tournament Predictor League"
     
-    invite_link = f"/signup?token={invite_token}"
+    invite_link = f"{FRONTEND_URL}/signup?token={invite_token}"
     await send_email(
         nomination["email"],
         f"Reminder: You're Invited to {tournament_name}!",
@@ -934,11 +963,12 @@ async def resend_invite(nomination_id: str, user: Dict = Depends(get_admin_user)
 
 This is a reminder that you've been invited to join {tournament_name}!
 
-Click the link below to create your account:
-{invite_link}
+Don't miss out — create your account and start predicting.
 
 This invite expires in 7 days.
-"""
+""",
+        action_url=invite_link,
+        action_text="Accept Invite & Sign Up"
     )
     
     return {"message": "Invite resent successfully", "invite_token": invite_token}
