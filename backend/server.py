@@ -27,7 +27,12 @@ load_dotenv(ROOT_DIR / '.env')
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url, tlsCAFile=certifi.where())
+client = AsyncIOMotorClient(
+    mongo_url,
+    tlsCAFile=certifi.where(),
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=10000,
+)
 db = client[os.environ['DB_NAME']]
 
 # JWT Configuration
@@ -1215,6 +1220,15 @@ async def startup():
     await db.tournaments.create_index("active_flag")
     await db.matches.create_index("tournament_id")
 
+    # Keep-alive cron to prevent Render free-tier spin-down
+    @aiocron.crontab('*/10 * * * *')
+    async def keep_alive():
+        try:
+            async with httpx.AsyncClient() as c:
+                await c.get("https://cricwinner-backend.onrender.com/api/tournaments")
+        except Exception:
+            pass
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
@@ -1229,20 +1243,4 @@ app.add_middleware(
     allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
-
-@app.on_event("startup")
-async def startup():
-    # ... your existing startup code ...
-    
-    @aiocron.crontab('*/10 * * * *')
-    async def keep_alive():
-        async with httpx.AsyncClient() as c:
-            await c.get("https://cricwinner-backend.onrender.com/api/tournaments")
-
-client = AsyncIOMotorClient(
-    mongo_url,
-    serverSelectionTimeoutMS=5000,
-    connectTimeoutMS=10000
 )

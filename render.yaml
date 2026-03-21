@@ -4,8 +4,9 @@ services:
     rootDir: backend
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn server:app --host 0.0.0.0 --port 10001
+    startCommand: uvicorn server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PORT
-        value: 10001
-    healthCheckPath: /api/tournaments
+        value: 10000
+      - key: PYTHON_VERSION
+        value: 3.11.9
