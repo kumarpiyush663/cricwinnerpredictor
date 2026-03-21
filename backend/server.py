@@ -33,7 +33,7 @@ client = AsyncIOMotorClient(
     serverSelectionTimeoutMS=5000,
     connectTimeoutMS=10000,
 )
-db = client[os.environ['DB_NAME']]
+db = client[os.environ.get('DB_NAME', 'cricketpredictor')]
 
 # JWT Configuration
 JWT_SECRET = os.environ.get('JWT_SECRET', secrets.token_hex(32))
@@ -1211,12 +1211,12 @@ async def startup():
             logger.info(f"   Password: {admin_password}")
             logger.info("="*50)
         
-        # Create indexes
-        await db.users.create_index("email", unique=True)
-        await db.users.create_index("username", unique=True)
-        await db.nominations.create_index("email", unique=True)
-        await db.nominations.create_index("username", unique=True)
-        await db.nominations.create_index("invite_token")
+        # Create indexes (sparse=True to skip docs missing the field)
+        await db.users.create_index("email", unique=True, sparse=True)
+        await db.users.create_index("username", unique=True, sparse=True)
+        await db.nominations.create_index("email", unique=True, sparse=True)
+        await db.nominations.create_index("username", unique=True, sparse=True)
+        await db.nominations.create_index("invite_token", sparse=True)
         await db.predictions.create_index([("user_id", 1), ("match_id", 1)], unique=True)
         await db.tournaments.create_index("active_flag")
         await db.matches.create_index("tournament_id")
