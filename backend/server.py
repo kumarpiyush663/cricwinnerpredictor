@@ -551,7 +551,7 @@ This link expires in 1 hour. If you didn't request a password reset, you can saf
         action_text="Reset Your Password"
     )
     
-    return {"message": "If the email exists, a reset link has been sent", "reset_token": reset_token}
+    return {"message": "If the email exists, a reset link has been sent"}
 
 @api_router.post("/auth/reset-password")
 async def reset_password(data: PasswordResetConfirm):

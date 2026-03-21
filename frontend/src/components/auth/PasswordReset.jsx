@@ -14,7 +14,6 @@ export const ForgotPasswordPage = () => {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [debugToken, setDebugToken] = useState('');
   
   const { forgotPassword } = useAuth();
   const { register, handleSubmit, formState: { errors } } = useForm();
@@ -27,10 +26,6 @@ export const ForgotPasswordPage = () => {
     
     if (result.success) {
       setSuccess(true);
-      // For testing - show the token (in production this would be removed)
-      if (result.token) {
-        setDebugToken(result.token);
-      }
     } else {
       setError(result.error);
     }
@@ -52,20 +47,7 @@ export const ForgotPasswordPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {debugToken && (
-              <Alert className="bg-amber-50 border-amber-200" data-testid="debug-token">
-                <AlertDescription className="text-xs">
-                  <strong>Debug (for testing):</strong> Reset token: {debugToken}
-                  <br />
-                  <Link 
-                    to={`/reset-password?token=${debugToken}`}
-                    className="text-primary underline mt-2 inline-block"
-                  >
-                    Click here to reset password
-                  </Link>
-                </AlertDescription>
-              </Alert>
-            )}
+
             <Link to="/login" className="block">
               <Button variant="outline" className="w-full" data-testid="back-to-login">
                 <ArrowLeft className="mr-2 h-4 w-4" />
