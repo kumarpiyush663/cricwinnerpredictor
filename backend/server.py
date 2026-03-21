@@ -343,6 +343,7 @@ async def send_email(to_email: str, subject: str, body: str):
                     return
                 else:
                     logger.error(f"❌ Brevo API error ({response.status_code}): {response.text}")
+                    logger.error(f"   Key used: '{BREVO_API_KEY[:15]}...' len={len(BREVO_API_KEY)}, sender={SENDER_EMAIL}")
         except Exception as e:
             logger.error(f"❌ Brevo email failed to {to_email}: {str(e)}")
 
