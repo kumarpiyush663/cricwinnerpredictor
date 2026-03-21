@@ -46,6 +46,13 @@ BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
 SENDER_EMAIL = os.environ.get('SENDER_EMAIL')  # Your verified Gmail
 SENDER_NAME = os.environ.get('SENDER_NAME', 'Cricket Predictor League')
 
+# Debug: log email config at startup
+if BREVO_API_KEY:
+    print(f"📧 Brevo API key loaded: {BREVO_API_KEY[:10]}... (len={len(BREVO_API_KEY)})")
+else:
+    print("⚠️ BREVO_API_KEY not set")
+print(f"📧 Sender email: {SENDER_EMAIL}")
+
 # CricAPI Configuration
 CRICAPI_KEY = os.environ.get('CRICAPI_KEY')
 CRICAPI_BASE_URL = os.environ.get('CRICAPI_BASE_URL', 'https://api.cricapi.com/v1')
