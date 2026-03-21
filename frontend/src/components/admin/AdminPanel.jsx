@@ -51,7 +51,8 @@ import {
   Mail,
   FileText,
   AlertCircle,
-  Link2
+  Link2,
+  Copy
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateIST, formatDate, cn } from '../../lib/utils';
@@ -1018,13 +1019,20 @@ const NominationsTab = ({ refreshStats }) => {
     setFormData({ full_name: '', username: '', email: '' });
   };
 
+  const [inviteLink, setInviteLink] = useState(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
 
     try {
-      await nominationApi.create(formData);
-      toast.success('Nomination added! Invite email sent.');
+      const res = await nominationApi.create(formData);
+      const token = res.data?.invite_token;
+      if (token) {
+        const link = `${window.location.origin}/signup?token=${token}`;
+        setInviteLink({ name: formData.full_name, link });
+      }
+      toast.success('Nomination added!');
       await fetchNominations();
       await refreshStats();
       setIsDialogOpen(false);
@@ -1034,6 +1042,14 @@ const NominationsTab = ({ refreshStats }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success('Invite link copied to clipboard!');
+    }).catch(() => {
+      toast.error('Failed to copy. Please select and copy manually.');
+    });
   };
 
   const handleResend = async (id) => {
@@ -1110,6 +1126,33 @@ const NominationsTab = ({ refreshStats }) => {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Invite Link Dialog - shown after creating a nomination */}
+        <Dialog open={!!inviteLink} onOpenChange={(open) => { if (!open) setInviteLink(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>🎉 Invite Created for {inviteLink?.name}</DialogTitle>
+              <DialogDescription>
+                Share this link with the user to let them sign up. No email required!
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="p-3 bg-muted rounded-lg break-all text-sm font-mono">
+                {inviteLink?.link}
+              </div>
+              <Button
+                className="w-full rounded-full"
+                onClick={() => copyToClipboard(inviteLink?.link)}
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copy Invite Link
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                Share via WhatsApp, Telegram, or any messaging app
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
       </CardHeader>
       <CardContent>
         {loading ? (
@@ -1179,8 +1222,15 @@ const NominationsTab = ({ refreshStats }) => {
                               <div className="p-3 bg-muted rounded-lg break-all text-sm font-mono">
                                 {`${window.location.origin}/signup?token=${nom.invite_token}`}
                               </div>
-                              <p className="text-xs text-muted-foreground">
-                                Select and copy the link above, or right-click → Copy
+                              <Button
+                                className="w-full rounded-full"
+                                onClick={() => copyToClipboard(`${window.location.origin}/signup?token=${nom.invite_token}`)}
+                              >
+                                <Copy className="w-4 h-4 mr-2" />
+                                Copy Invite Link
+                              </Button>
+                              <p className="text-xs text-muted-foreground text-center">
+                                Share via WhatsApp, Telegram, or any messaging app
                               </p>
                             </div>
                           </DialogContent>
