@@ -197,14 +197,15 @@ export const SignupPage = () => {
                   <div className="relative">
                     <Input
                       id="password"
-                      type={showPassword ? 'text' : 'password'}
+                      {...register('password', { required: 'Password is required' })}
+                      type={showPassword ? "text" : "password"}
                       placeholder="Create a strong password"
                       data-testid="signup-password"
-                      {...register('password', { required: 'Password is required' })}
+                      className="pr-10"
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
