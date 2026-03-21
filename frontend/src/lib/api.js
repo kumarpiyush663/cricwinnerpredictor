@@ -51,6 +51,7 @@ export const matchApi = {
   getAll: (tournamentId) => api.get('/matches', { params: { tournament_id: tournamentId } }),
   getById: (id) => api.get(`/matches/${id}`),
   create: (data) => api.post('/admin/matches', data),
+  createBulk: (matches) => api.post('/admin/matches/bulk', { matches }),
   update: (id, data) => api.put(`/admin/matches/${id}`, data),
   delete: (id) => api.delete(`/admin/matches/${id}`),
   sync: (tournamentId) => api.post('/admin/matches/sync', null, { params: { tournament_id: tournamentId } })

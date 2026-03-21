@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import Papa from 'papaparse';
 import { adminApi, tournamentApi, matchApi, nominationApi, reportApi } from '../../lib/api';
 import { useTournament } from '../../contexts/TournamentContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
@@ -52,7 +53,8 @@ import {
   FileText,
   AlertCircle,
   Link2,
-  Copy
+  Copy,
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateIST, formatDate, cn } from '../../lib/utils';
@@ -591,6 +593,132 @@ const TournamentsTab = ({ tournaments, refreshTournaments, refreshStats }) => {
   );
 };
 
+// Bulk Match Upload Component
+const BulkMatchUpload = ({ selectedTournament, onSuccess }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [parsedData, setParsedData] = useState([]);
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          // Map headers to required fields (match_no, stage, team_a, team_b, venue, start_datetime_ist)
+          const formatted = results.data.map(row => ({
+            tournament_id: selectedTournament.id,
+            match_no: parseInt(row.match_no || row.MatchNo) || 0,
+            stage: row.stage || row.Stage || 'Group',
+            team_a: row.team_a || row.TeamA || '',
+            team_b: row.team_b || row.TeamB || '',
+            venue: row.venue || row.Venue || 'TBD',
+            start_datetime_ist: row.start_datetime_ist || row.Date || new Date().toISOString()
+          }));
+          setParsedData(formatted);
+        },
+        error: (error) => {
+          toast.error(`Error parsing CSV: ${error.message}`);
+        }
+      });
+    }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (parsedData.length === 0) return;
+    setUploading(true);
+    try {
+      const res = await matchApi.createBulk(parsedData);
+      toast.success(res.data.message || `Uploaded ${parsedData.length} matches`);
+      setIsOpen(false);
+      setParsedData([]);
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to bulk upload matches');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      setIsOpen(open);
+      if (!open) setParsedData([]);
+    }}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="rounded-full" data-testid="bulk-upload-btn">
+          <Upload className="w-4 h-4 mr-2" />
+          Bulk Upload CSV
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Bulk Upload Matches</DialogTitle>
+          <DialogDescription>
+            Upload a CSV file containing match_no, stage, team_a, team_b, venue, and start_datetime_ist columns.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4 py-4">
+          <Input 
+            type="file" 
+            accept=".csv" 
+            onChange={handleFileUpload} 
+          />
+          
+          {parsedData.length > 0 && (
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No.</TableHead>
+                    <TableHead>Stage</TableHead>
+                    <TableHead>Team A</TableHead>
+                    <TableHead>Team B</TableHead>
+                    <TableHead>Venue</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {parsedData.slice(0, 10).map((match, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell>{match.match_no}</TableCell>
+                      <TableCell>{match.stage}</TableCell>
+                      <TableCell>{match.team_a}</TableCell>
+                      <TableCell>{match.team_b}</TableCell>
+                      <TableCell>{match.venue}</TableCell>
+                      <TableCell>{formatDate(match.start_datetime_ist)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {parsedData.length > 10 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        ... and {parsedData.length - 10} more matches
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
+          <Button 
+            onClick={handleConfirmUpload} 
+            disabled={parsedData.length === 0 || uploading}
+          >
+            {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+            Approve & ({parsedData.length}) Upload
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
 // Matches Tab Component
 const MatchesTab = ({ selectedTournament, refreshStats }) => {
   const [matches, setMatches] = useState([]);
@@ -751,16 +879,18 @@ const MatchesTab = ({ selectedTournament, refreshStats }) => {
                 Sync Matches
               </Button>
             ) : (
-              <Dialog open={isDialogOpen} onOpenChange={(open) => {
-                setIsDialogOpen(open);
-                if (!open) resetForm();
-              }}>
-                <DialogTrigger asChild>
-                  <Button className="rounded-full" data-testid="add-match-btn">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Match
-                  </Button>
-                </DialogTrigger>
+              <div className="flex items-center gap-2">
+                <BulkMatchUpload selectedTournament={selectedTournament} onSuccess={fetchMatches} />
+                <Dialog open={isDialogOpen} onOpenChange={(open) => {
+                  setIsDialogOpen(open);
+                  if (!open) resetForm();
+                }}>
+                  <DialogTrigger asChild>
+                    <Button className="rounded-full" data-testid="add-match-btn">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Match
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>{editingMatch ? 'Edit Match' : 'Add Match'}</DialogTitle>
@@ -862,6 +992,7 @@ const MatchesTab = ({ selectedTournament, refreshStats }) => {
                   </form>
                 </DialogContent>
               </Dialog>
+            </div>
             )}
           </div>
         </div>

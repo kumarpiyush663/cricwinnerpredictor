@@ -146,6 +146,9 @@ class MatchResponse(BaseModel):
     status: str
     created_at: str
 
+class MatchBulkCreate(BaseModel):
+    matches: List[MatchCreate]
+
 class NominationCreate(BaseModel):
     full_name: str
     username: str
@@ -704,6 +707,32 @@ async def create_match(data: MatchCreate, user: Dict = Depends(get_admin_user)):
     await db.matches.insert_one(match)
     match.pop("_id", None)
     return match
+
+@admin_router.post("/matches/bulk")
+async def bulk_create_matches(data: MatchBulkCreate, user: Dict = Depends(get_admin_user)):
+    matches_to_insert = []
+    now_iso = datetime.now(timezone.utc).isoformat()
+    
+    for match_data in data.matches:
+        # Verify tournament exists (assumes all matches in bulk belong to same valid tournament)
+        tournament = await db.tournaments.find_one({"id": match_data.tournament_id})
+        if not tournament:
+            raise HTTPException(status_code=404, detail=f"Tournament not found: {match_data.tournament_id}")
+            
+        match_id = str(uuid.uuid4())
+        match = {
+            "id": match_id,
+            **match_data.model_dump(),
+            "result_winner": None,
+            "status": "upcoming",
+            "created_at": now_iso
+        }
+        matches_to_insert.append(match)
+        
+    if matches_to_insert:
+        await db.matches.insert_many(matches_to_insert)
+        
+    return {"message": f"Successfully created {len(matches_to_insert)} matches", "count": len(matches_to_insert)}
 
 @admin_router.put("/matches/{match_id}")
 async def update_match(match_id: str, data: MatchUpdate, user: Dict = Depends(get_admin_user)):

@@ -1,0 +1,6 @@
+match_no,stage,team_a,team_b,venue,start_datetime_ist
+1,Group,Chennai Super Kings,Royal Challengers Bangalore,M. A. Chidambaram Stadium,2025-03-22T20:00:00+05:30
+2,Group,Punjab Kings,Delhi Capitals,Maharaja Yadavindra Singh International Cricket Stadium,2025-03-23T15:30:00+05:30
+3,Group,Kolkata Knight Riders,Sunrisers Hyderabad,Eden Gardens,2025-03-23T20:00:00+05:30
+4,Group,Rajasthan Royals,Lucknow Super Giants,Sawai Mansingh Stadium,2025-03-24T15:30:00+05:30
+5,Group,Gujarat Titans,Mumbai Indians,Narendra Modi Stadium,2025-03-24T20:00:00+05:30
