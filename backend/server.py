@@ -1210,6 +1210,15 @@ async def startup():
             logger.info(f"   Email: admin@cricketpredictor.com")
             logger.info(f"   Password: {admin_password}")
             logger.info("="*50)
+        else:
+            # If ADMIN_PASSWORD env var is set, update the admin password
+            env_password = os.environ.get('ADMIN_PASSWORD')
+            if env_password:
+                await db.users.update_one(
+                    {"role": "admin"},
+                    {"$set": {"password_hash": hash_password(env_password)}}
+                )
+                logger.info("🔑 Admin password updated from ADMIN_PASSWORD env var")
         
         # Create indexes (sparse=True to skip docs missing the field)
         await db.users.create_index("email", unique=True, sparse=True)
