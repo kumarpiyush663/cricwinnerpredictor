@@ -42,15 +42,15 @@ JWT_EXPIRY_HOURS = 24
 JWT_EXTENDED_EXPIRY_DAYS = 7
 
 # Email Configuration (Brevo - free 300 emails/day, HTTP API, no domain needed)
-BREVO_API_KEY = os.environ.get('BREVO_API_KEY')
-SENDER_EMAIL = os.environ.get('SENDER_EMAIL')  # Your verified Gmail
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '').strip().strip('"').strip("'") or None
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', '').strip().strip('"').strip("'") or None
 SENDER_NAME = os.environ.get('SENDER_NAME', 'Cricket Predictor League')
 
 # Debug: log email config at startup
 if BREVO_API_KEY:
-    print(f"📧 Brevo API key loaded: {BREVO_API_KEY[:10]}... (len={len(BREVO_API_KEY)})")
+    print(f"📧 Brevo API key loaded: starts='{BREVO_API_KEY[:12]}' len={len(BREVO_API_KEY)}")
 else:
-    print("⚠️ BREVO_API_KEY not set")
+    print("⚠️ BREVO_API_KEY not set — emails will be logged to console only")
 print(f"📧 Sender email: {SENDER_EMAIL}")
 
 # CricAPI Configuration
