@@ -606,16 +606,53 @@ const BulkMatchUpload = ({ selectedTournament, onSuccess }) => {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          // Map headers to required fields (match_no, stage, team_a, team_b, venue, start_datetime_ist)
-          const formatted = results.data.map(row => ({
-            tournament_id: selectedTournament.id,
-            match_no: parseInt(row.match_no || row.MatchNo) || 0,
-            stage: row.stage || row.Stage || 'Group',
-            team_a: row.team_a || row.TeamA || '',
-            team_b: row.team_b || row.TeamB || '',
-            venue: row.venue || row.Venue || 'TBD',
-            start_datetime_ist: row.start_datetime_ist || row.Date || new Date().toISOString()
-          }));
+          // Map headers to required fields based on the provided schema
+          const formatted = results.data
+            .filter(row => row['Match No'] || row.match_no) // Skip purely empty trailing rows
+            .map(row => {
+              let startDatetime = new Date().toISOString();
+              
+              try {
+                const dateStr = row['Date'] || row.date;
+                const timeStr = row['Time'] || row.time;
+                
+                if (dateStr && timeStr) {
+                  let formattedDateStr = dateStr;
+                  if (dateStr.includes('/')) {
+                     const parts = dateStr.split('/');
+                     // Assume DD/MM/YYYY
+                     formattedDateStr = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                  }
+                  
+                  const timeParts = String(timeStr).trim().match(/(\d+):(\d+)\s*(AM|PM)/i);
+                  if (timeParts) {
+                     let [, hours, minutes, modifier] = timeParts;
+                     hours = parseInt(hours, 10);
+                     if (hours === 12) {
+                       hours = modifier.toUpperCase() === 'AM' ? 0 : 12;
+                     } else if (modifier.toUpperCase() === 'PM') {
+                       hours += 12;
+                     }
+                     const paddedHours = hours.toString().padStart(2, '0');
+                     const paddedMins = minutes.toString().padStart(2, '0');
+                     
+                     startDatetime = `${formattedDateStr}T${paddedHours}:${paddedMins}:00+05:30`;
+                  }
+                }
+              } catch (e) {
+                console.error("Error parsing date/time", e);
+              }
+              
+              return {
+                tournament_id: selectedTournament.id,
+                match_no: parseInt(row['Match No'] || row.match_no) || 0,
+                stage: row['Match Type'] || row.stage || 'Group',
+                team_a: row['Team 1'] || row.team_a || '',
+                team_b: row['Team 2'] || row.team_b || '',
+                venue: row['Venue'] || row.venue || 'TBD',
+                start_datetime_ist: startDatetime
+              };
+            });
           setParsedData(formatted);
         },
         error: (error) => {

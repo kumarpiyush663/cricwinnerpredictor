@@ -1,6 +1,11 @@
-match_no,stage,team_a,team_b,venue,start_datetime_ist
-1,Group,Chennai Super Kings,Royal Challengers Bangalore,M. A. Chidambaram Stadium,2025-03-22T20:00:00+05:30
-2,Group,Punjab Kings,Delhi Capitals,Maharaja Yadavindra Singh International Cricket Stadium,2025-03-23T15:30:00+05:30
-3,Group,Kolkata Knight Riders,Sunrisers Hyderabad,Eden Gardens,2025-03-23T20:00:00+05:30
-4,Group,Rajasthan Royals,Lucknow Super Giants,Sawai Mansingh Stadium,2025-03-24T15:30:00+05:30
-5,Group,Gujarat Titans,Mumbai Indians,Narendra Modi Stadium,2025-03-24T20:00:00+05:30
+Match No,Date,Day,Time,Team 1,Team 2,Venue,Match Type
+1,28/03/2026,Sat,7:30 PM,Royal Challengers Bengaluru,Sunrisers Hyderabad,Bengaluru,Group
+2,29/03/2026,Sun,7:30 PM,Mumbai Indians,Kolkata Knight Riders,Mumbai,Group
+3,30/03/2026,Mon,7:30 PM,Rajasthan Royals,Chennai Super Kings,Guwahati,Group
+4,31/03/2026,Tue,7:30 PM,Punjab Kings,Gujarat Titans,New Chandigarh,Group
+5,01/04/2026,Wed,7:30 PM,Lucknow Super Giants,Delhi Capitals,Lucknow,Group
+6,02/04/2026,Thu,7:30 PM,Kolkata Knight Riders,Sunrisers Hyderabad,Kolkata,Group
+7,03/04/2026,Fri,7:30 PM,Chennai Super Kings,Punjab Kings,Chennai,Group
+8,04/04/2026,Sat,3:30 PM,Delhi Capitals,Mumbai Indians,Delhi,Group
+9,04/04/2026,Sat,7:30 PM,Gujarat Titans,Rajasthan Royals,Ahmedabad,Group
+10,05/04/2026,Sun,3:30 PM,Sunrisers Hyderabad,Lucknow Super Giants,Hyderabad,Group
