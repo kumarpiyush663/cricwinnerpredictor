@@ -68,7 +68,7 @@ export const Navbar = () => {
 
           {/* Tournament Selector (center) */}
           {isAuthenticated && tournaments.length > 0 && (
-            <div className="hidden md:flex items-center">
+            <div className="flex items-center flex-1 justify-center px-2">
               <Select
                 value={selectedTournament?.id || ''}
                 onValueChange={(value) => {
@@ -76,8 +76,8 @@ export const Navbar = () => {
                   selectTournament(tournament);
                 }}
               >
-                <SelectTrigger className="w-[220px]" data-testid="tournament-selector">
-                  <SelectValue placeholder="Select Tournament" />
+                <SelectTrigger className="w-[140px] sm:w-[220px]" data-testid="tournament-selector">
+                  <SelectValue placeholder="Select Tournament" className="truncate" />
                 </SelectTrigger>
                 <SelectContent>
                   {tournaments.map((t) => (
@@ -198,27 +198,6 @@ export const Navbar = () => {
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t py-4 space-y-4" data-testid="mobile-menu">
-            {isAuthenticated && tournaments.length > 0 && (
-              <Select
-                value={selectedTournament?.id || ''}
-                onValueChange={(value) => {
-                  const tournament = tournaments.find(t => t.id === value);
-                  selectTournament(tournament);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Tournament" />
-                </SelectTrigger>
-                <SelectContent>
-                  {tournaments.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name} {t.active_flag && '(Active)'}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-
             {isAuthenticated && (
               <div className="space-y-2">
                 {navLinks.map((link) => (

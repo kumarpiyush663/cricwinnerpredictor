@@ -1045,19 +1045,23 @@ This invite expires in 7 days.
     return {"message": "Nomination approved and invite sent", "invite_token": invite_token}
 
 @admin_router.delete("/nominations/{nomination_id}")
-async def delete_nomination(nomination_id: str, user: Dict = Depends(get_admin_user)):
+async def delete_nomination(nomination_id: str, admin_user: Dict = Depends(get_admin_user)):
     nomination = await db.nominations.find_one({"id": nomination_id}, {"_id": 0})
     if not nomination:
         raise HTTPException(status_code=404, detail="Nomination not found")
         
+    # If the user is registered, delete their account and predictions
     if nomination["status"] == "registered":
-        raise HTTPException(status_code=400, detail="Cannot delete a user who has already registered")
-        
+        user_to_delete = await db.users.find_one({"email": nomination["email"]})
+        if user_to_delete:
+            await db.users.delete_one({"id": user_to_delete["id"]})
+            await db.predictions.delete_many({"user_id": user_to_delete["id"]})
+
     result = await db.nominations.delete_one({"id": nomination_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Nomination not found")
         
-    return {"message": "Nomination deleted successfully"}
+    return {"message": "Nomination and associated user deleted successfully"}
 
 @admin_router.post("/nominations/{nomination_id}/resend-invite")
 async def resend_invite(nomination_id: str, user: Dict = Depends(get_admin_user)):

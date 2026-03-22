@@ -1476,6 +1476,20 @@ const NominationsTab = ({ refreshStats }) => {
                         </Button>
                       </div>
                     )}
+                    {nom.status === 'registered' && (
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDelete(nom.id)}
+                          data-testid={`delete-registered-${nom.id}`}
+                          title="Delete User"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
