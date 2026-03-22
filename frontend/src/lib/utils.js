@@ -12,6 +12,7 @@ export function formatDateIST(dateString, options = {}) {
   const date = new Date(dateString);
   const defaultOptions = {
     timeZone: 'Asia/Kolkata',
+    weekday: 'short',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -30,6 +31,7 @@ export function formatDate(dateString) {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-IN', {
     timeZone: 'Asia/Kolkata',
+    weekday: 'short',
     day: '2-digit',
     month: 'short',
     year: 'numeric'
