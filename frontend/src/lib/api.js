@@ -57,12 +57,19 @@ export const matchApi = {
   sync: (tournamentId) => api.post('/admin/matches/sync', null, { params: { tournament_id: tournamentId } })
 };
 
+// Auth APIs
+export const authApi = {
+  requestAccount: (data) => api.post('/auth/request-account', data)
+};
+
 // Nomination APIs
 export const nominationApi = {
   getAll: () => api.get('/admin/nominations'),
   create: (data) => api.post('/admin/nominations', data),
   createBulk: (nominations) => api.post('/admin/nominations/bulk', { nominations }),
-  resendInvite: (id) => api.post(`/admin/nominations/${id}/resend-invite`)
+  resendInvite: (id) => api.post(`/admin/nominations/${id}/resend-invite`),
+  approve: (id) => api.post(`/admin/nominations/${id}/approve`),
+  delete: (id) => api.delete(`/admin/nominations/${id}`)
 };
 
 // Prediction APIs

@@ -967,6 +967,98 @@ async def create_nominations_bulk(data: NominationBulkCreate, user: Dict = Depen
             results.append({"success": False, "email": nom.email, "error": e.detail})
     return results
 
+@api_router.post("/auth/request-account")
+async def request_account(data: NominationCreate):
+    # Check if email or username already exists
+    existing = await db.nominations.find_one({
+        "$or": [
+            {"email": data.email},
+            {"username": data.username}
+        ]
+    })
+    if existing:
+        raise HTTPException(status_code=400, detail="Email or username already requested or nominated")
+    
+    nomination_id = str(uuid.uuid4())
+    
+    nomination = {
+        "id": nomination_id,
+        "full_name": data.full_name,
+        "username": data.username,
+        "email": data.email,
+        "invite_token": None,
+        "invite_sent_at": None,
+        "invite_expires_at": None,
+        "status": "requested",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.nominations.insert_one(nomination)
+    
+    return {"message": "Account requested successfully! An admin will review it.", "id": nomination_id}
+
+@admin_router.post("/nominations/{nomination_id}/approve")
+async def approve_nomination(nomination_id: str, user: Dict = Depends(get_admin_user)):
+    nomination = await db.nominations.find_one({"id": nomination_id}, {"_id": 0})
+    if not nomination:
+        raise HTTPException(status_code=404, detail="Nomination not found")
+        
+    if nomination["status"] != "requested":
+        raise HTTPException(status_code=400, detail="Nomination is not in requested state")
+        
+    invite_token = secrets.token_urlsafe(32)
+    invite_expires = datetime.now(timezone.utc) + timedelta(days=7)
+    
+    await db.nominations.update_one(
+        {"id": nomination_id},
+        {"$set": {
+            "invite_token": invite_token,
+            "invite_sent_at": datetime.now(timezone.utc).isoformat(),
+            "invite_expires_at": invite_expires.isoformat(),
+            "status": "invited"
+        }}
+    )
+    
+    # Send invite email
+    active_tournament = await db.tournaments.find_one({"active_flag": True}, {"_id": 0})
+    tournament_name = active_tournament["name"] if active_tournament else "Cricket Tournament Predictor League"
+    
+    invite_link = f"{FRONTEND_URL}/signup?token={invite_token}"
+    try:
+        await send_email(
+            nomination["email"],
+            f"Your Request is Approved! Join {tournament_name}",
+            f"""Hi {nomination['full_name']},
+
+Great news! Your request to join {tournament_name} has been approved.
+
+Create your account and start predicting match winners.
+Your username will be: {nomination['username']}
+
+This invite expires in 7 days.
+""",
+            action_url=invite_link,
+            action_text="Join Now & Start Predicting"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send approval email to {nomination['email']}: {e}")
+        
+    return {"message": "Nomination approved and invite sent", "invite_token": invite_token}
+
+@admin_router.delete("/nominations/{nomination_id}")
+async def delete_nomination(nomination_id: str, user: Dict = Depends(get_admin_user)):
+    nomination = await db.nominations.find_one({"id": nomination_id}, {"_id": 0})
+    if not nomination:
+        raise HTTPException(status_code=404, detail="Nomination not found")
+        
+    if nomination["status"] == "registered":
+        raise HTTPException(status_code=400, detail="Cannot delete a user who has already registered")
+        
+    result = await db.nominations.delete_one({"id": nomination_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Nomination not found")
+        
+    return {"message": "Nomination deleted successfully"}
+
 @admin_router.post("/nominations/{nomination_id}/resend-invite")
 async def resend_invite(nomination_id: str, user: Dict = Depends(get_admin_user)):
     nomination = await db.nominations.find_one({"id": nomination_id}, {"_id": 0})

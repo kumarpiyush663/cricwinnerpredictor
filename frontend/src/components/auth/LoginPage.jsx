@@ -166,9 +166,12 @@ export const LoginPage = () => {
                 </Button>
               </form>
 
-              <p className="mt-6 text-center text-sm text-muted-foreground">
-                Don't have an account? Contact your admin for an invite.
-              </p>
+              <div className="mt-6 text-center text-sm text-muted-foreground">
+                Don't have an account?{' '}
+                <Link to="/request-account" className="text-primary hover:underline font-medium">
+                  Request an invite
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -54,7 +54,9 @@ import {
   AlertCircle,
   Link2,
   Copy,
-  Upload
+  Upload,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDateIST, formatDate, cn } from '../../lib/utils';
@@ -1229,6 +1231,27 @@ const NominationsTab = ({ refreshStats }) => {
     }
   };
 
+  const handleApprove = async (id) => {
+    try {
+      await nominationApi.approve(id);
+      toast.success('Account approved and invite sent!');
+      fetchNominations();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to approve account');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this nomination/request?")) return;
+    try {
+      await nominationApi.delete(id);
+      toast.success('Deleted successfully');
+      fetchNominations();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to delete');
+    }
+  };
+
   return (
     <Card data-testid="nominations-tab">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -1358,6 +1381,11 @@ const NominationsTab = ({ refreshStats }) => {
                         <Check className="w-3 h-3 mr-1" />
                         Registered
                       </Badge>
+                    ) : nom.status === 'requested' ? (
+                      <Badge variant="outline" className="text-blue-600 border-blue-200 bg-blue-50">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Requested
+                      </Badge>
                     ) : (
                       <Badge variant="outline" className="text-amber-600">
                         <Mail className="w-3 h-3 mr-1" />
@@ -1366,6 +1394,30 @@ const NominationsTab = ({ refreshStats }) => {
                     )}
                   </TableCell>
                   <TableCell className="text-right">
+                    {nom.status === 'requested' && (
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                          onClick={() => handleApprove(nom.id)}
+                          data-testid={`approve-${nom.id}`}
+                          title="Approve Request"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDelete(nom.id)}
+                          data-testid={`reject-${nom.id}`}
+                          title="Reject Request"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                     {nom.status === 'invited' && nom.invite_token && (
                       <div className="flex items-center justify-end gap-1">
                         <Dialog>
@@ -1411,6 +1463,16 @@ const NominationsTab = ({ refreshStats }) => {
                         >
                           <Send className="w-4 h-4 mr-1" />
                           Resend
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDelete(nom.id)}
+                          data-testid={`delete-invite-${nom.id}`}
+                          title="Revoke Invite"
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     )}

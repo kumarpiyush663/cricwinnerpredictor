@@ -8,6 +8,7 @@ import { ProtectedRoute } from "./components/common/ProtectedRoute";
 import { LandingPage } from "./components/pages/LandingPage";
 import { LoginPage } from "./components/auth/LoginPage";
 import { SignupPage } from "./components/auth/SignupPage";
+import { RequestAccountPage } from "./components/auth/RequestAccountPage";
 import { ForgotPasswordPage, ResetPasswordPage } from "./components/auth/PasswordReset";
 import { Dashboard } from "./components/pages/Dashboard";
 import { Leaderboard } from "./components/pages/Leaderboard";
@@ -25,6 +26,7 @@ function App() {
               {/* Public routes without navbar */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/request-account" element={<RequestAccountPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
